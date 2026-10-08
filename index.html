@@ -1,0 +1,1870 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>NOVA Schedule</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: "class"
+    }
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 10% 10%, rgba(124, 58, 237, .22), transparent 30%),
+        radial-gradient(circle at 90% 20%, rgba(59, 130, 246, .18), transparent 30%),
+        radial-gradient(circle at 50% 100%, rgba(16, 185, 129, .12), transparent 35%),
+        #f7f8fc;
+      color: #111827;
+      min-height: 100vh;
+      transition: .35s ease;
+    }
+
+    html.dark body {
+      background:
+        radial-gradient(circle at 10% 10%, rgba(124, 58, 237, .20), transparent 30%),
+        radial-gradient(circle at 90% 20%, rgba(59, 130, 246, .15), transparent 30%),
+        radial-gradient(circle at 50% 100%, rgba(16, 185, 129, .08), transparent 35%),
+        #080b14;
+      color: white;
+    }
+
+    .glass {
+      background: rgba(255, 255, 255, .68);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 255, 255, .75);
+      box-shadow: 0 20px 60px rgba(15, 23, 42, .08);
+    }
+
+    html.dark .glass {
+      background: rgba(17, 24, 39, .65);
+      border-color: rgba(255, 255, 255, .08);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #7c3aed, #2563eb, #06b6d4);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .animated-gradient {
+      background: linear-gradient(
+        120deg,
+        #7c3aed,
+        #2563eb,
+        #06b6d4,
+        #8b5cf6
+      );
+      background-size: 300% 300%;
+      animation: gradientMove 8s ease infinite;
+    }
+
+    @keyframes gradientMove {
+      0% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    .fade-up {
+      animation: fadeUp .7s ease both;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .event-card {
+      transition: .25s ease;
+    }
+
+    .event-card:hover {
+      transform: translateY(-4px) scale(1.01);
+    }
+
+    .day-column {
+      transition: .25s ease;
+    }
+
+    .day-column.drag-over {
+      transform: scale(1.02);
+      border-color: #7c3aed;
+      background: rgba(124, 58, 237, .08);
+    }
+
+    .modal {
+      opacity: 0;
+      visibility: hidden;
+      transition: .25s ease;
+    }
+
+    .modal.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-box {
+      transform: translateY(20px) scale(.97);
+      transition: .25s ease;
+    }
+
+    .modal.active .modal-box {
+      transform: translateY(0) scale(1);
+    }
+
+    .pulse-dot {
+      animation: pulseDot 1.5s infinite;
+    }
+
+    @keyframes pulseDot {
+      0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, .6);
+      }
+
+      70% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+      }
+    }
+
+    .clock-number {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -2px;
+    }
+
+    .scrollbar::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(124, 58, 237, .35);
+      border-radius: 20px;
+    }
+
+    .live-line {
+      position: relative;
+    }
+
+    .live-line::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 2px;
+      background: linear-gradient(90deg, #ef4444, #f97316);
+      box-shadow: 0 0 12px rgba(239, 68, 68, .45);
+    }
+
+    .live-line::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: calc(50% - 5px);
+      width: 10px;
+      height: 10px;
+      background: #ef4444;
+      border-radius: 50%;
+      box-shadow: 0 0 15px rgba(239, 68, 68, .7);
+    }
+
+    input,
+    select {
+      outline: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="max-w-[1500px] mx-auto px-4 md:px-6 lg:px-8 py-5">
+
+    <!-- HEADER -->
+    <header class="glass rounded-3xl px-5 py-4 flex flex-wrap items-center justify-between gap-4 fade-up">
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl animated-gradient flex items-center justify-center text-white text-2xl font-black shadow-lg">
+          N
+        </div>
+
+        <div>
+          <h1 class="text-xl font-black tracking-tight">
+            NOVA
+          </h1>
+
+          <p class="text-xs text-gray-500 dark:text-gray-400">
+            Smart Schedule
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+
+        <div class="hidden md:flex items-center gap-2 glass rounded-2xl px-4 py-2">
+
+          <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full pulse-dot"></div>
+
+          <span class="text-sm font-semibold">
+            Tashkent
+          </span>
+
+          <span class="text-gray-400">
+            •
+          </span>
+
+          <span id="headerClock" class="font-bold tabular-nums">
+            00:00:00
+          </span>
+
+        </div>
+
+        <select
+          id="languageSelect"
+          class="glass rounded-2xl px-3 py-2 text-sm font-semibold bg-transparent"
+        >
+          <option value="ru">🇷🇺 RU</option>
+          <option value="uz">🇺🇿 UZ</option>
+          <option value="en">🇬🇧 EN</option>
+        </select>
+
+        <button
+          id="themeButton"
+          class="glass w-11 h-11 rounded-2xl hover:scale-105 transition"
+        >
+          🌙
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <!-- HERO -->
+    <section class="grid lg:grid-cols-[1.5fr_.8fr] gap-5 mt-5">
+
+      <div class="relative overflow-hidden rounded-[32px] animated-gradient text-white p-7 md:p-10 shadow-2xl fade-up">
+
+        <div class="absolute -right-20 -top-20 w-72 h-72 bg-white/10 rounded-full blur-3xl"></div>
+        <div class="absolute -left-20 -bottom-20 w-72 h-72 bg-black/10 rounded-full blur-3xl"></div>
+
+        <div class="relative z-10">
+
+          <div class="flex items-center gap-2 mb-5">
+            <div class="w-2.5 h-2.5 bg-white rounded-full pulse-dot"></div>
+
+            <span class="text-white/80 text-sm font-semibold">
+              Сейчас в Ташкенте
+            </span>
+          </div>
+
+          <div
+            id="mainClock"
+            class="clock-number text-6xl md:text-8xl font-black leading-none"
+          >
+            00:00:00
+          </div>
+
+          <div
+            id="mainDate"
+            class="mt-4 text-white/80 text-lg"
+          >
+            Загружаем дату...
+          </div>
+
+          <div class="mt-8 flex flex-wrap gap-3">
+
+            <button
+              onclick="openModal()"
+              class="bg-white text-gray-900 px-6 py-3 rounded-2xl font-bold hover:scale-105 transition shadow-xl"
+            >
+              + Добавить занятие
+            </button>
+
+            <button
+              onclick="scrollToSchedule()"
+              class="bg-white/15 border border-white/20 px-6 py-3 rounded-2xl font-bold hover:bg-white/20 transition"
+            >
+              Открыть расписание
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- NEXT LESSON -->
+      <div class="glass rounded-[32px] p-6 fade-up">
+
+        <div class="flex items-center justify-between mb-5">
+
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              Следующее занятие
+            </p>
+
+            <h2 class="text-2xl font-black mt-1">
+              Не найдено
+            </h2>
+          </div>
+
+          <div
+            id="nextIcon"
+            class="w-14 h-14 rounded-2xl bg-violet-100 dark:bg-violet-500/10 flex items-center justify-center text-2xl"
+          >
+            📚
+          </div>
+
+        </div>
+
+        <div id="nextTitle" class="text-xl font-bold">
+          —
+        </div>
+
+        <div id="nextPlace" class="text-gray-500 dark:text-gray-400 mt-1">
+          —
+        </div>
+
+        <div class="mt-6 p-4 rounded-2xl bg-gray-100/80 dark:bg-white/5">
+
+          <div class="flex justify-between text-sm mb-2">
+
+            <span class="text-gray-500 dark:text-gray-400">
+              Начало
+            </span>
+
+            <span id="nextTime" class="font-bold">
+              —
+            </span>
+
+          </div>
+
+          <div
+            id="countdown"
+            class="text-3xl font-black gradient-text"
+          >
+            —
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- STATS -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
+
+      <div class="glass rounded-3xl p-5 fade-up">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          Сегодня
+        </p>
+
+        <div id="todayStat" class="text-3xl font-black mt-2">
+          0
+        </div>
+
+        <div class="text-xs text-gray-400 mt-1">
+          занятий
+        </div>
+      </div>
+
+      <div class="glass rounded-3xl p-5 fade-up">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          За неделю
+        </p>
+
+        <div id="weekStat" class="text-3xl font-black mt-2">
+          0
+        </div>
+
+        <div class="text-xs text-gray-400 mt-1">
+          занятий
+        </div>
+      </div>
+
+      <div class="glass rounded-3xl p-5 fade-up">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          💻 IT
+        </p>
+
+        <div id="itStat" class="text-3xl font-black mt-2">
+          0
+        </div>
+
+        <div class="text-xs text-gray-400 mt-1">
+          занятий
+        </div>
+      </div>
+
+      <div class="glass rounded-3xl p-5 fade-up">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          🇬🇧 English
+        </p>
+
+        <div id="englishStat" class="text-3xl font-black mt-2">
+          0
+        </div>
+
+        <div class="text-xs text-gray-400 mt-1">
+          занятий
+        </div>
+      </div>
+
+    </section>
+
+
+    <!-- SEARCH -->
+    <section class="glass rounded-3xl p-4 mt-5">
+
+      <div class="flex flex-col md:flex-row gap-3">
+
+        <div class="relative flex-1">
+
+          <span class="absolute left-4 top-1/2 -translate-y-1/2">
+            🔎
+          </span>
+
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="Поиск занятий..."
+            class="w-full bg-gray-100 dark:bg-white/5 rounded-2xl py-3 pl-11 pr-4"
+          >
+
+        </div>
+
+        <button
+          onclick="quickAdd('IT')"
+          class="px-5 py-3 rounded-2xl bg-violet-600 text-white font-bold hover:bg-violet-700 transition"
+        >
+          💻 Добавить IT
+        </button>
+
+        <button
+          onclick="quickAdd('English')"
+          class="px-5 py-3 rounded-2xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition"
+        >
+          🇬🇧 Добавить English
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- DAYS -->
+    <section id="scheduleSection" class="mt-7">
+
+      <div
+        id="dayTabs"
+        class="flex gap-2 overflow-x-auto pb-2 scrollbar"
+      ></div>
+
+    </section>
+
+
+    <!-- SCHEDULE -->
+    <section
+      id="scheduleGrid"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mt-4"
+    ></section>
+
+
+    <!-- FOOTER -->
+    <footer class="text-center py-10 text-sm text-gray-400">
+      NOVA Schedule · Your week, perfectly organized.
+    </footer>
+
+  </div>
+
+
+  <!-- MODAL -->
+  <div
+    id="modal"
+    class="modal fixed inset-0 z-50 bg-black/50 backdrop-blur-md flex items-center justify-center p-4"
+  >
+
+    <div class="modal-box glass w-full max-w-lg rounded-[32px] p-6">
+
+      <div class="flex justify-between items-center mb-6">
+
+        <div>
+          <h2 id="modalTitle" class="text-2xl font-black">
+            Новое занятие
+          </h2>
+
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Настрой своё расписание
+          </p>
+        </div>
+
+        <button
+          onclick="closeModal()"
+          class="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/5 hover:scale-105 transition"
+        >
+          ✕
+        </button>
+
+      </div>
+
+
+      <form id="eventForm" class="space-y-4">
+
+        <input type="hidden" id="eventId">
+
+        <div>
+          <label class="text-sm font-semibold">
+            Название
+          </label>
+
+          <input
+            id="eventTitle"
+            required
+            placeholder="Например: IT"
+            class="w-full mt-2 px-4 py-3 rounded-2xl bg-gray-100 dark:bg-white/5"
+          >
+        </div>
+
+
+        <div class="grid grid-cols-2 gap-3">
+
+          <div>
+            <label class="text-sm font-semibold">
+              Иконка
+            </label>
+
+            <input
+              id="eventIcon"
+              value="📚"
+              class="w-full mt-2 px-4 py-3 rounded-2xl bg-gray-100 dark:bg-white/5"
+            >
+          </div>
+
+          <div>
+            <label class="text-sm font-semibold">
+              Цвет
+            </label>
+
+            <select
+              id="eventColor"
+              class="w-full mt-2 px-4 py-3 rounded-2xl bg-gray-100 dark:bg-white/5"
+            >
+              <option value="violet">Violet</option>
+              <option value="blue">Blue</option>
+              <option value="emerald">Emerald</option>
+              <option value="orange">Orange</option>
+              <option value="pink">Pink</option>
+            </select>
+          </div>
+
+        </div>
+
+
+        <div>
+          <label class="text-sm font-semibold">
+            День
+          </label>
+
+          <select
+            id="eventDay"
+            class="w-full mt-2 px-4 py-3 rounded-2xl bg-gray-100 dark:bg-white/5"
+          >
+            <option value="1">Понедельник</option>
+            <option value="2">Вторник</option>
+            <option value="3">Среда</option>
+            <option value="4">Четверг</option>
+            <option value="5">Пятница</option>
+            <option value="6">Суббота</option>
+          </select>
+        </div>
+
+
+        <div class="grid grid-cols-2 gap-3">
+
+          <div>
+            <label class="text-sm font-semibold">
+              Начало
+            </label>
+
+            <input
+              id="eventStart"
+              type="time"
+              required
+              class="w-full mt-2 px-4 py-3 rounded-2xl bg-gray-100 dark:bg-white/5"
+            >
+          </div>
+
+          <div>
+            <label class="text-sm font-semibold">
+              Конец
+            </label>
+
+            <input
+              id="eventEnd"
+              type="time"
+              required
+              class="w-full mt-2 px-4 py-3 rounded-2xl bg-gray-100 dark:bg-white/5"
+            >
+          </div>
+
+        </div>
+
+
+        <div>
+          <label class="text-sm font-semibold">
+            Место
+          </label>
+
+          <input
+            id="eventPlace"
+            placeholder="Например: IT Center"
+            class="w-full mt-2 px-4 py-3 rounded-2xl bg-gray-100 dark:bg-white/5"
+          >
+        </div>
+
+
+        <div class="flex gap-3 pt-3">
+
+          <button
+            type="submit"
+            class="flex-1 py-3 rounded-2xl animated-gradient text-white font-bold"
+          >
+            Сохранить
+          </button>
+
+          <button
+            type="button"
+            id="deleteButton"
+            onclick="deleteEvent()"
+            class="hidden px-5 py-3 rounded-2xl bg-red-500/10 text-red-500 font-bold"
+          >
+            Удалить
+          </button>
+
+        </div>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <script>
+
+    const STORAGE_KEY = "nova_schedule_v2";
+
+    const dayNames = {
+      1: "Пн",
+      2: "Вт",
+      3: "Ср",
+      4: "Чт",
+      5: "Пт",
+      6: "Сб"
+    };
+
+    const fullDayNames = {
+      1: "Понедельник",
+      2: "Вторник",
+      3: "Среда",
+      4: "Четверг",
+      5: "Пятница",
+      6: "Суббота"
+    };
+
+    const colors = {
+      violet: {
+        bg: "bg-violet-500/10",
+        border: "border-violet-500/20",
+        text: "text-violet-600 dark:text-violet-300",
+        badge: "bg-violet-500"
+      },
+
+      blue: {
+        bg: "bg-blue-500/10",
+        border: "border-blue-500/20",
+        text: "text-blue-600 dark:text-blue-300",
+        badge: "bg-blue-500"
+      },
+
+      emerald: {
+        bg: "bg-emerald-500/10",
+        border: "border-emerald-500/20",
+        text: "text-emerald-600 dark:text-emerald-300",
+        badge: "bg-emerald-500"
+      },
+
+      orange: {
+        bg: "bg-orange-500/10",
+        border: "border-orange-500/20",
+        text: "text-orange-600 dark:text-orange-300",
+        badge: "bg-orange-500"
+      },
+
+      pink: {
+        bg: "bg-pink-500/10",
+        border: "border-pink-500/20",
+        text: "text-pink-600 dark:text-pink-300",
+        badge: "bg-pink-500"
+      }
+    };
+
+
+    let events = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+
+      {
+        id: crypto.randomUUID(),
+        title: "IT",
+        icon: "💻",
+        day: 1,
+        start: "16:00",
+        end: "17:30",
+        place: "IT Center",
+        color: "violet"
+      },
+
+      {
+        id: crypto.randomUUID(),
+        title: "English",
+        icon: "🇬🇧",
+        day: 2,
+        start: "18:00",
+        end: "19:00",
+        place: "English Center",
+        color: "blue"
+      },
+
+      {
+        id: crypto.randomUUID(),
+        title: "IT",
+        icon: "💻",
+        day: 3,
+        start: "16:00",
+        end: "17:30",
+        place: "IT Center",
+        color: "violet"
+      },
+
+      {
+        id: crypto.randomUUID(),
+        title: "English",
+        icon: "🇬🇧",
+        day: 4,
+        start: "18:00",
+        end: "19:00",
+        place: "English Center",
+        color: "blue"
+      },
+
+      {
+        id: crypto.randomUUID(),
+        title: "IT",
+        icon: "💻",
+        day: 5,
+        start: "16:00",
+        end: "17:30",
+        place: "IT Center",
+        color: "violet"
+      },
+
+      {
+        id: crypto.randomUUID(),
+        title: "English",
+        icon: "🇬🇧",
+        day: 6,
+        start: "18:00",
+        end: "19:00",
+        place: "English Center",
+        color: "blue"
+      }
+
+    ];
+
+
+    let selectedDay = new Date().getDay();
+
+    if (selectedDay === 0) {
+      selectedDay = 1;
+    }
+
+
+    let draggedId = null;
+
+
+    function saveEvents() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    }
+
+
+    function formatTime(seconds) {
+
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+
+      return [
+        String(h).padStart(2, "0"),
+        String(m).padStart(2, "0"),
+        String(s).padStart(2, "0")
+      ].join(":");
+    }
+
+
+    /*
+      РЕАЛЬНОЕ ВРЕМЯ ТАШКЕНТА
+    */
+
+    function updateRealTime() {
+
+      const now = new Date();
+
+      const formatter = new Intl.DateTimeFormat(
+        "ru-RU",
+        {
+          timeZone: "Asia/Tashkent",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false
+        }
+      );
+
+      const time = formatter.format(now);
+
+      document.getElementById("mainClock").textContent = time;
+      document.getElementById("headerClock").textContent = time;
+
+
+      const dateFormatter = new Intl.DateTimeFormat(
+        "ru-RU",
+        {
+          timeZone: "Asia/Tashkent",
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        }
+      );
+
+      document.getElementById("mainDate").textContent =
+        dateFormatter.format(now);
+
+
+      updateNextLesson();
+      updateLiveStatus();
+    }
+
+
+    function getTashkentTime() {
+
+      const parts = new Intl.DateTimeFormat(
+        "en-US",
+        {
+          timeZone: "Asia/Tashkent",
+          weekday: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+          second: "numeric",
+          hour12: false
+        }
+      ).formatToParts(new Date());
+
+      const get = type =>
+        Number(parts.find(x => x.type === type)?.value);
+
+      return {
+        day: get("weekday"),
+        hour: get("hour"),
+        minute: get("minute"),
+        second: get("second")
+      };
+    }
+
+
+    function minutesFromTime(time) {
+
+      const [h, m] = time.split(":").map(Number);
+
+      return h * 60 + m;
+    }
+
+
+    function updateNextLesson() {
+
+      const now = getTashkentTime();
+
+      const currentMinutes =
+        now.hour * 60 +
+        now.minute +
+        now.second / 60;
+
+      let candidates = [];
+
+
+      for (const event of events) {
+
+        let dayDistance =
+          (event.day - now.day + 7) % 7;
+
+        let eventMinutes =
+          minutesFromTime(event.start);
+
+
+        if (
+          dayDistance === 0 &&
+          eventMinutes <= currentMinutes
+        ) {
+          dayDistance = 7;
+        }
+
+
+        const totalMinutes =
+          dayDistance * 1440 +
+          eventMinutes -
+          currentMinutes;
+
+
+        candidates.push({
+          event,
+          totalMinutes
+        });
+
+      }
+
+
+      candidates.sort(
+        (a, b) => a.totalMinutes - b.totalMinutes
+      );
+
+
+      if (!candidates.length) {
+        return;
+      }
+
+
+      const next = candidates[0];
+
+      document.getElementById("nextTitle").textContent =
+        next.event.icon + " " + next.event.title;
+
+      document.getElementById("nextPlace").textContent =
+        next.event.place || "Место не указано";
+
+      document.getElementById("nextTime").textContent =
+        next.event.start;
+
+
+      const totalSeconds =
+        Math.max(0, Math.floor(next.totalMinutes * 60));
+
+      document.getElementById("countdown").textContent =
+        totalSeconds < 86400
+          ? "Через " + formatTime(totalSeconds)
+          : "Через " +
+            Math.floor(totalSeconds / 86400) +
+            " д.";
+    }
+
+
+    function updateLiveStatus() {
+
+      const now = getTashkentTime();
+
+      const current =
+        now.hour * 60 +
+        now.minute +
+        now.second / 60;
+
+
+      document
+        .querySelectorAll("[data-event-id]")
+        .forEach(card => {
+
+          const id = card.dataset.eventId;
+
+          const event =
+            events.find(e => e.id === id);
+
+          if (!event) return;
+
+          const start =
+            minutesFromTime(event.start);
+
+          const end =
+            minutesFromTime(event.end);
+
+          const isToday =
+            event.day === now.day;
+
+          const active =
+            isToday &&
+            current >= start &&
+            current < end;
+
+
+          const status =
+            card.querySelector(".event-status");
+
+          if (!status) return;
+
+
+          if (active) {
+
+            status.textContent = "● Сейчас";
+
+            status.className =
+              "event-status text-xs font-bold text-emerald-500";
+
+          } else {
+
+            status.textContent = "";
+
+          }
+
+        });
+    }
+
+
+    function renderTabs() {
+
+      const tabs =
+        document.getElementById("dayTabs");
+
+      tabs.innerHTML = "";
+
+
+      Object.entries(dayNames).forEach(
+        ([day, name]) => {
+
+          const button =
+            document.createElement("button");
+
+          button.textContent = name;
+
+          const active =
+            Number(day) === selectedDay;
+
+
+          button.className =
+            `
+            px-6 py-3 rounded-2xl font-bold whitespace-nowrap transition
+            ${
+              active
+                ? "animated-gradient text-white shadow-lg"
+                : "glass hover:scale-105"
+            }
+            `;
+
+
+          button.onclick = () => {
+
+            selectedDay = Number(day);
+
+            renderAll();
+
+          };
+
+
+          tabs.appendChild(button);
+
+        }
+      );
+    }
+
+
+    function renderSchedule() {
+
+      const grid =
+        document.getElementById("scheduleGrid");
+
+      grid.innerHTML = "";
+
+
+      Object.entries(dayNames).forEach(
+        ([day, name]) => {
+
+          const dayNumber = Number(day);
+
+          const column =
+            document.createElement("div");
+
+
+          column.className =
+            `
+            day-column
+            glass
+            rounded-[28px]
+            p-4
+            min-h-[350px]
+            ${dayNumber === selectedDay ? "ring-2 ring-violet-500/30" : ""}
+            `;
+
+
+          column.dataset.day = dayNumber;
+
+
+          const header =
+            document.createElement("div");
+
+
+          header.className =
+            "flex items-center justify-between mb-4";
+
+
+          header.innerHTML =
+            `
+            <div>
+              <div class="text-lg font-black">
+                ${name}
+              </div>
+
+              <div class="text-xs text-gray-400">
+                ${fullDayNames[dayNumber]}
+              </div>
+            </div>
+
+            <button
+              onclick="openModal(null, ${dayNumber})"
+              class="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/5 hover:scale-110 transition"
+            >
+              +
+            </button>
+            `;
+
+
+          column.appendChild(header);
+
+
+          const dayEvents =
+            events
+              .filter(e => e.day === dayNumber)
+              .sort(
+                (a, b) =>
+                  minutesFromTime(a.start) -
+                  minutesFromTime(b.start)
+              );
+
+
+          if (!dayEvents.length) {
+
+            const empty =
+              document.createElement("div");
+
+            empty.className =
+              "h-56 flex flex-col items-center justify-center text-gray-400";
+
+            empty.innerHTML =
+              `
+              <div class="text-4xl mb-3">
+                ☁️
+              </div>
+
+              <div class="text-sm">
+                Пока пусто
+              </div>
+
+              <button
+                onclick="openModal(null, ${dayNumber})"
+                class="mt-3 text-violet-500 font-bold text-sm"
+              >
+                + Добавить
+              </button>
+              `;
+
+            column.appendChild(empty);
+
+          } else {
+
+            dayEvents.forEach(event => {
+
+              column.appendChild(
+                renderEvent(event)
+              );
+
+            });
+
+          }
+
+
+          column.addEventListener(
+            "dragover",
+            e => {
+
+              e.preventDefault();
+
+              column.classList.add("drag-over");
+
+            }
+          );
+
+
+          column.addEventListener(
+            "dragleave",
+            () => {
+
+              column.classList.remove("drag-over");
+
+            }
+          );
+
+
+          column.addEventListener(
+            "drop",
+            e => {
+
+              e.preventDefault();
+
+              column.classList.remove("drag-over");
+
+
+              const event =
+                events.find(
+                  e => e.id === draggedId
+                );
+
+
+              if (!event) return;
+
+
+              event.day = dayNumber;
+
+              saveEvents();
+
+              renderAll();
+
+            }
+          );
+
+
+          grid.appendChild(column);
+
+        }
+      );
+    }
+
+
+    function renderEvent(event) {
+
+      const c =
+        colors[event.color] ||
+        colors.violet;
+
+
+      const card =
+        document.createElement("div");
+
+
+      card.draggable = true;
+
+      card.dataset.eventId = event.id;
+
+      card.className =
+        `
+        event-card
+        ${c.bg}
+        border
+        ${c.border}
+        rounded-2xl
+        p-4
+        mb-3
+        cursor-grab
+        fade-up
+        `;
+
+
+      card.innerHTML =
+        `
+        <div class="flex items-start justify-between gap-2">
+
+          <div class="flex items-center gap-3">
+
+            <div class="w-11 h-11 rounded-xl ${c.badge} text-white flex items-center justify-center text-xl shadow-lg">
+              ${event.icon}
+            </div>
+
+            <div>
+
+              <div class="font-black">
+                ${escapeHTML(event.title)}
+              </div>
+
+              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                ${escapeHTML(event.place || "Без места")}
+              </div>
+
+            </div>
+
+          </div>
+
+          <button
+            class="edit-event w-8 h-8 rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+          >
+            ⋮
+          </button>
+
+        </div>
+
+
+        <div class="flex items-center justify-between mt-4">
+
+          <div class="font-black ${c.text}">
+            ${event.start} — ${event.end}
+          </div>
+
+          <div class="event-status"></div>
+
+        </div>
+        `;
+
+
+      card
+        .querySelector(".edit-event")
+        .onclick = e => {
+
+          e.stopPropagation();
+
+          openModal(event.id);
+
+        };
+
+
+      card.ondblclick = () =>
+        openModal(event.id);
+
+
+      card.ondragstart = () => {
+
+        draggedId = event.id;
+
+      };
+
+
+      card.ondragend = () => {
+
+        draggedId = null;
+
+      };
+
+
+      return card;
+    }
+
+
+    function escapeHTML(value) {
+
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+    }
+
+
+    function openModal(id = null, defaultDay = selectedDay) {
+
+      const modal =
+        document.getElementById("modal");
+
+      const form =
+        document.getElementById("eventForm");
+
+      form.reset();
+
+
+      document.getElementById("eventId").value =
+        id || "";
+
+
+      document.getElementById("eventDay").value =
+        defaultDay;
+
+
+      document.getElementById("deleteButton")
+        .classList.toggle("hidden", !id);
+
+
+      if (id) {
+
+        const event =
+          events.find(e => e.id === id);
+
+        if (!event) return;
+
+
+        document.getElementById("modalTitle")
+          .textContent =
+          "Редактировать занятие";
+
+
+        document.getElementById("eventTitle").value =
+          event.title;
+
+        document.getElementById("eventIcon").value =
+          event.icon;
+
+        document.getElementById("eventColor").value =
+          event.color;
+
+        document.getElementById("eventDay").value =
+          event.day;
+
+        document.getElementById("eventStart").value =
+          event.start;
+
+        document.getElementById("eventEnd").value =
+          event.end;
+
+        document.getElementById("eventPlace").value =
+          event.place;
+
+      } else {
+
+        document.getElementById("modalTitle")
+          .textContent =
+          "Новое занятие";
+
+        document.getElementById("eventStart").value =
+          "16:00";
+
+        document.getElementById("eventEnd").value =
+          "17:00";
+
+      }
+
+
+      modal.classList.add("active");
+
+    }
+
+
+    function closeModal() {
+
+      document
+        .getElementById("modal")
+        .classList.remove("active");
+
+    }
+
+
+    document
+      .getElementById("eventForm")
+      .addEventListener(
+        "submit",
+        e => {
+
+          e.preventDefault();
+
+
+          const id =
+            document.getElementById("eventId").value;
+
+
+          const data = {
+
+            title:
+              document.getElementById("eventTitle").value.trim(),
+
+            icon:
+              document.getElementById("eventIcon").value.trim() || "📚",
+
+            day:
+              Number(document.getElementById("eventDay").value),
+
+            start:
+              document.getElementById("eventStart").value,
+
+            end:
+              document.getElementById("eventEnd").value,
+
+            place:
+              document.getElementById("eventPlace").value.trim(),
+
+            color:
+              document.getElementById("eventColor").value
+
+          };
+
+
+          if (
+            !data.title ||
+            !data.start ||
+            !data.end
+          ) {
+            return;
+          }
+
+
+          if (
+            minutesFromTime(data.end) <=
+            minutesFromTime(data.start)
+          ) {
+
+            alert("Время окончания должно быть позже начала.");
+
+            return;
+
+          }
+
+
+          if (id) {
+
+            const index =
+              events.findIndex(
+                e => e.id === id
+              );
+
+            if (index !== -1) {
+
+              events[index] = {
+                ...events[index],
+                ...data
+              };
+
+            }
+
+          } else {
+
+            events.push({
+              id: crypto.randomUUID(),
+              ...data
+            });
+
+          }
+
+
+          saveEvents();
+
+          closeModal();
+
+          renderAll();
+
+        }
+      );
+
+
+    function deleteEvent() {
+
+      const id =
+        document.getElementById("eventId").value;
+
+
+      if (!id) return;
+
+
+      events =
+        events.filter(
+          event => event.id !== id
+        );
+
+
+      saveEvents();
+
+      closeModal();
+
+      renderAll();
+
+    }
+
+
+    function quickAdd(type) {
+
+      openModal(null, selectedDay);
+
+
+      setTimeout(() => {
+
+        if (type === "IT") {
+
+          document.getElementById("eventTitle").value =
+            "IT";
+
+          document.getElementById("eventIcon").value =
+            "💻";
+
+          document.getElementById("eventPlace").value =
+            "IT Center";
+
+          document.getElementById("eventColor").value =
+            "violet";
+
+          document.getElementById("eventStart").value =
+            "16:00";
+
+          document.getElementById("eventEnd").value =
+            "17:30";
+
+        }
+
+
+        if (type === "English") {
+
+          document.getElementById("eventTitle").value =
+            "English";
+
+          document.getElementById("eventIcon").value =
+            "🇬🇧";
+
+          document.getElementById("eventPlace").value =
+            "English Center";
+
+          document.getElementById("eventColor").value =
+            "blue";
+
+          document.getElementById("eventStart").value =
+            "18:00";
+
+          document.getElementById("eventEnd").value =
+            "19:00";
+
+        }
+
+      }, 10);
+
+    }
+
+
+    function updateStats() {
+
+      const now =
+        getTashkentTime();
+
+
+      const today =
+        events.filter(
+          e => e.day === now.day
+        ).length;
+
+
+      const it =
+        events.filter(
+          e =>
+            e.title
+              .toLowerCase()
+              .includes("it")
+        ).length;
+
+
+      const english =
+        events.filter(
+          e =>
+            e.title
+              .toLowerCase()
+              .includes("english") ||
+            e.title
+              .toLowerCase()
+              .includes("анг")
+        ).length;
+
+
+      document.getElementById("todayStat")
+        .textContent = today;
+
+      document.getElementById("weekStat")
+        .textContent = events.length;
+
+      document.getElementById("itStat")
+        .textContent = it;
+
+      document.getElementById("englishStat")
+        .textContent = english;
+
+    }
+
+
+    document
+      .getElementById("searchInput")
+      .addEventListener(
+        "input",
+        e => {
+
+          const query =
+            e.target.value
+              .toLowerCase()
+              .trim();
+
+
+          document
+            .querySelectorAll("[data-event-id]")
+            .forEach(card => {
+
+              const event =
+                events.find(
+                  e =>
+                    e.id ===
+                    card.dataset.eventId
+                );
+
+
+              if (!event) return;
+
+
+              const text =
+                `
+                ${event.title}
+                ${event.place}
+                ${event.start}
+                `.toLowerCase();
+
+
+              card.style.display =
+                text.includes(query)
+                  ? ""
+                  : "none";
+
+            });
+
+        }
+      );
+
+
+    function scrollToSchedule() {
+
+      document
+        .getElementById("scheduleSection")
+        .scrollIntoView({
+          behavior: "smooth"
+        });
+
+    }
+
+
+    /*
+      DARK MODE
+    */
+
+    const savedTheme =
+      localStorage.getItem("nova_theme");
+
+
+    if (savedTheme === "dark") {
+
+      document.documentElement.classList.add("dark");
+
+      document.getElementById("themeButton")
+        .textContent = "☀️";
+
+    }
+
+
+    document
+      .getElementById("themeButton")
+      .onclick = () => {
+
+        document.documentElement.classList.toggle("dark");
+
+
+        const dark =
+          document.documentElement.classList.contains("dark");
+
+
+        localStorage.setItem(
+          "nova_theme",
+          dark ? "dark" : "light"
+        );
+
+
+        document.getElementById("themeButton")
+          .textContent =
+          dark ? "☀️" : "🌙";
+
+      };
+
+
+    /*
+      MODAL CLOSE
+    */
+
+    document
+      .getElementById("modal")
+      .addEventListener(
+        "click",
+        e => {
+
+          if (
+            e.target.id === "modal"
+          ) {
+            closeModal();
+          }
+
+        }
+      );
+
+
+    document.addEventListener(
+      "keydown",
+      e => {
+
+        if (e.key === "Escape") {
+          closeModal();
+        }
+
+      }
+    );
+
+
+    function renderAll() {
+
+      renderTabs();
+
+      renderSchedule();
+
+      updateStats();
+
+      updateNextLesson();
+
+      updateLiveStatus();
+
+    }
+
+
+    renderAll();
+
+    updateRealTime();
+
+    setInterval(
+      updateRealTime,
+      1000
+    );
+
+  </script>
+
+</body>
+</html>
